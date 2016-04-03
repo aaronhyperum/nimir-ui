@@ -11,7 +11,7 @@ import std.file: read, thisExePath;
 import std.string: toStringz, fromStringz, format;
 
 import nimir.image;
-import system = nimir.system;
+import system = nimir.systems;
 import serial.device;
 
 //NOTE: Video initialization is commented out because of faulty SWS handling; waiting for software update.
@@ -32,7 +32,7 @@ NimirImage video;
 
 void main()
 {
-	system.init(1280, 720, "IMGUI!!!");
+	system.init(1280, 720, "Nimir UI");
 
 	//NOTE: Video initialization is commented out because of faulty SWS handling; waiting for software update.
 	//TODO: Move this to nimir.system, report issue on Github.
@@ -117,7 +117,7 @@ void main()
 
 
 	// Main loop
-	while (system.isRunning)
+	while (system.window.shouldRun)
 	{
 		auto io = igGetIO();
 		system.update();
@@ -125,7 +125,7 @@ void main()
 		//NOTE: Video handling is commented out because of faulty SWS handling; waiting for software update.
 		//TODO: Fix video handling, report issue on Github.
 
-		if(av_read_frame(cameraFormatContext, &cameraPacket)>=0)
+		/*if(av_read_frame(cameraFormatContext, &cameraPacket)>=0)
 		{
 			if(cameraPacket.stream_index == cameraVideo)
 			{
@@ -138,7 +138,7 @@ void main()
 					video.loadData(convertedFrame.data[0], 1280, 720, 2);
 		        }
 	    	}
-		}
+		}*/
 
 		{
 			igSetNextWindowPos(ImVec2(400,400), ImGuiSetCond_FirstUseEver);
@@ -205,7 +205,7 @@ void showPanel()
 	ImVec2 posMainPanel = ImVec2(10, 10);
 
     igSetNextWindowPos(posMainPanel);
-    igBegin("mainPanel", &shouldShowMainPanel, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove);
+    igBegin("mainPanel", &shouldShowMainPanel, ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove);
 	{
 	// Logo and version.
 	igImage( cast(void*)nimirLogo.glTexture, ImVec2(nimirLogo.w, nimirLogo.h), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
@@ -242,7 +242,7 @@ void showPanel()
 	if (shouldShowControlPanel)
 	{
 		igSetNextWindowPos(ImVec2(posMainPanel.x , 2 * posMainPanel.y + sizeMainPanel.y));
-		igSetNextWindowSize(ImVec2(sizeMainPanel.x, system.windowHeight - (3 * posMainPanel.y + sizeMainPanel.y)));
+		igSetNextWindowSize(ImVec2(sizeMainPanel.x, system.window.h - (3 * posMainPanel.y + sizeMainPanel.y)));
 	    igBegin("controlPanel", &shouldShowControlPanel, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove);
 		{
 			// Serial IO Manipulation
