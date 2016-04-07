@@ -1,10 +1,12 @@
-module nimir.systems.glfw;
+module nimir.systems.window;
 
 import derelict.opengl3.gl3;
 import derelict.glfw3.glfw3;
 
 import std.string;
 import std.stdio;
+
+import std.conv;
 
 static this()
 {
@@ -14,9 +16,6 @@ static this()
     extern(C) nothrow void function(int error, const(char)* description) onError =
     function void(int error, const(char)* description) nothrow
     {
-
-        import std.conv;
-
         try { writefln("GLFW Error %s: %s",error, to!string(description)); }
         catch { }
     };
@@ -54,6 +53,21 @@ class Window
     @property bool shouldRun()
     {
         return !glfwWindowShouldClose(handle);
+    }
+
+    version(Win32) @property void* win32()
+    {
+        return glfwGetWin32Window(handle);
+    }
+
+    @property int focused()
+    {
+        return glfwGetWindowAttrib(handle, GLFW_FOCUSED);
+    }
+
+    @property void showCursor(bool show)
+    {
+        glfwSetInputMode(handle, GLFW_CURSOR, show ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
     }
 
     @property extern(C) const(char)* clipboardText() nothrow
@@ -95,6 +109,34 @@ class Window
         glfwSetWindowSize(handle, w, h);
     }
 
+    @property int fbw()
+    {
+        int w, h;
+        glfwGetFramebufferSize(handle, &w, &h);
+        return w;
+    }
+
+    @property int fbh()
+    {
+        int w, h;
+        glfwGetFramebufferSize(handle, &w, &h);
+        return h;
+    }
+
+    @property double mouseX()
+    {
+        double x, y;
+        glfwGetCursorPos(handle, &x, &y);
+        return x;
+    }
+
+    @property double mouseY()
+    {
+        double x, y;
+        glfwGetCursorPos(handle, &x, &y);
+        return y;
+    }
+
     @property extern(C) void onMouse(void function(GLFWwindow*, int, int, int) nothrow callback)
     {
         glfwSetMouseButtonCallback(handle, callback);
@@ -113,5 +155,10 @@ class Window
     @property extern(C) void onCharacter(void function(GLFWwindow*, uint) nothrow callback)
     {
         glfwSetCharCallback(handle, callback);
+    }
+
+    void swap()
+    {
+        glfwSwapBuffers(handle);
     }
 }

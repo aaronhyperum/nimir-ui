@@ -3,9 +3,10 @@ module nimir.image;
 import std.string;
 import std.stdio;
 import std.file: exists;
+import std.conv;
 
 import derelict.opengl3.gl3;
-import imageformats: IFImage, read_image;
+import imageformats;
 
 
 class NimirImage
@@ -24,20 +25,12 @@ public:
         return inited;
     }
 
-    bool loadFile(string file, int channels = 0)
+    bool loadFile(string file, uint channels = 0)
     {
         if(!inited) init();
-        if(!exists(file) || (channels != 0 && channels != 3 && channels !=4)) return false;
+        if(!exists(file) || channels < 0 || channels > 5) return false;
 
         image = read_image(file, channels);
-
-        return loadData(image.pixels.ptr, cast(int)image.w, cast(int)image.h, image.c);
-    }
-
-    bool loadData(ubyte* data, int width, int height, int channels)
-    {
-        if(!inited) init();
-        //if(channels != 1 && channels != 2 && channels != 3 && channels != 4) return false;
 
         GLint lastTexture;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
@@ -46,9 +39,30 @@ public:
         {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage2D(GL_TEXTURE_2D, 0, channels == 3? GL_RGB : GL_RGBA , width, height, 0, channels == 1? GL_RED : channels == 2? GL_RG : channels == 3? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, cast(void*)data);
+            glTexImage2D(GL_TEXTURE_2D, 0, image.c == 3? GL_RGB : GL_RGBA , cast(int)image.w, cast(int)image.h, 0, image.c == 1? GL_RED : image.c == 2? GL_RG : image.c == 3? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, cast(void*)data);
             glBindTexture(GL_TEXTURE_2D, lastTexture);
         }
+        return true;
+    }
+
+    bool loadData(ubyte* data, int width, int height, int channels)
+    {
+        if(!inited) init();
+        if(channels < 0 || channels > 5) return false;
+
+        GLint lastTexture;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexImage2D(GL_TEXTURE_2D, 0, channels == 3? GL_RGB : GL_RGBA , width, height, 0,  channels == 1? GL_RED : channels == 2? GL_RG : channels == 3? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, cast(void*)data);
+            glBindTexture(GL_TEXTURE_2D, lastTexture);
+        }
+        image.w = width;
+        image.h = height;
+        image.c = cast(ColFmt)channels;
         return true;
     }
 
