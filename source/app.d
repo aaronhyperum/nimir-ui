@@ -44,7 +44,7 @@ void main()
 	AVCodec*         cameraCodec         = null;
 	AVCodecContext*  cameraCodecContext  = null;
 	int              cameraVideo         = 0;
-	string           cameraSource    = /*"USB 2.0 PC Cam";*/"Face";
+	string           cameraSource    = /*"USB 2.0 PC Cam";*/"USB";
 	AVFrame*         rawFrame = null, convertedFrame = null;
 	SwsContext*      imageConversionContext ;
 	ubyte*           frameBuffer;
@@ -54,7 +54,7 @@ void main()
 	int              isFrameFinished = 0;
 
 	av_dict_set(&options, "video_size", "640x480", 0);
-	av_dict_set(&options, "framerate", "25", 0);
+	av_dict_set(&options, "framerate", "30", 0);
 
 	if (avformat_open_input(&cameraFormatContext, cameraSource.toStringz, cameraFormat, &options) != 0) return;
 	if (avformat_find_stream_info(cameraFormatContext, &options) < 0) return;
@@ -144,7 +144,7 @@ void main()
 			if (igButton("Test Window")) show_test_window ^= 1;
 			if (igButton("Another Window")) show_another_window ^= 1;
 			igText("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-			igImage( cast(void*)video.glTexture, ImVec2(video.w, video.h), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
+			igImage( cast(void*)video.glTexture, ImVec2(video.w*1.5, video.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
 			igEnd();
 		}
 

@@ -170,7 +170,7 @@ void update()
 
 	if (!gui.fontTexture)
     {
-        gui.initRenderProgram();
+        gui.init();
         gui.initFontTexture();
     }
 

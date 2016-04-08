@@ -76,12 +76,11 @@ static this()
 
 static ~this()
 {
-
+    gui.quit();
 }
 
 final abstract class gui
 {   static:
-
     GLuint       fontTexture = 0;
     int          shaderHandle = 0, vertHandle = 0, fragHandle = 0;
     int          attribLocationTex = 0, attribLocationProjMtx = 0;
@@ -113,7 +112,7 @@ final abstract class gui
     	ImFontAtlas_SetTexID(io.Fonts, cast(void*)fontTexture);
     }
 
-    void initRenderProgram()
+    void init()
     {
         const GLchar* vertShader =
             "#version 330\n"
@@ -174,5 +173,35 @@ final abstract class gui
 
     	glBindVertexArray(0);
     	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    void quit()
+    {
+        if (gui.vaoHandle) glDeleteVertexArrays(1, &gui.vaoHandle);
+        if (gui.vboHandle) glDeleteBuffers(1, &gui.vboHandle);
+        if (gui.elementsHandle) glDeleteBuffers(1, &gui.elementsHandle);
+        gui.vaoHandle = 0;
+        gui.vboHandle = 0;
+        gui.elementsHandle = 0;
+
+        glDetachShader(gui.shaderHandle, gui.vertHandle);
+        glDeleteShader(gui.vertHandle);
+        gui.vertHandle = 0;
+
+        glDetachShader(gui.shaderHandle, gui.fragHandle);
+        glDeleteShader(gui.fragHandle);
+        gui.fragHandle = 0;
+
+        glDeleteProgram(gui.shaderHandle);
+        gui.shaderHandle = 0;
+
+    	if (gui.fontTexture)
+    	{
+    		glDeleteTextures(1, &gui.fontTexture);
+            ImFontAtlas_SetTexID(igGetIO().Fonts, cast(void*)0);
+    		gui.fontTexture = 0;
+    	}
+
+        igShutdown();
     }
 }
