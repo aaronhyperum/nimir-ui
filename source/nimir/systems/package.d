@@ -1,6 +1,7 @@
 module nimir.systems;
 
-import nimir.systems.window;
+import nimir.systems.windowing;
+import nimir.systems.graphics;
 import nimir.systems.gui;
 
 import derelict.imgui.imgui;
@@ -12,17 +13,11 @@ import imageformats;
 
 bool initialized = false;
 
-//GLFWwindow*  window;
 Window window;
 
 double       time = 0.0f;
 bool[3]      mousePressed;
 float        mouseWheel = 0.0f;
-float[3]     clearColor = [0.9f, 0.9f, 0.9f];
-
-/+
-    SYSTEMS INTERFACE
-+/
 
 bool init(int w, int h, string title)
 {
@@ -129,50 +124,25 @@ bool init(int w, int h, string title)
 
         igPushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
     	igPushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
+
+        graphics.clearingColor = [0.9f, 0.9f, 0.9f];
+
+
     }
     return initialized;
 }
 
 void quit()
 {
-    if (gui.vaoHandle) glDeleteVertexArrays(1, &gui.vaoHandle);
-    if (gui.vboHandle) glDeleteBuffers(1, &gui.vboHandle);
-    if (gui.elementsHandle) glDeleteBuffers(1, &gui.elementsHandle);
-    gui.vaoHandle = 0;
-    gui.vboHandle = 0;
-    gui.elementsHandle = 0;
-
-    glDetachShader(gui.shaderHandle, gui.vertHandle);
-    glDeleteShader(gui.vertHandle);
-    gui.vertHandle = 0;
-
-    glDetachShader(gui.shaderHandle, gui.fragHandle);
-    glDeleteShader(gui.fragHandle);
-    gui.fragHandle = 0;
-
-    glDeleteProgram(gui.shaderHandle);
-    gui.shaderHandle = 0;
-
-	if (gui.fontTexture)
-	{
-		glDeleteTextures(1, &gui.fontTexture);
-        ImFontAtlas_SetTexID(igGetIO().Fonts, cast(void*)0);
-		gui.fontTexture = 0;
-	}
-
-	igShutdown();
-    glfwTerminate();
+    gui.close();
+    windowing.close();
 }
 
 void update()
 {
-    glfwPollEvents();
+    windowing.pollInput();
 
-	if (!gui.fontTexture)
-    {
-        gui.init();
-        gui.initFontTexture();
-    }
+    gui.start();
 
 	gui.io.DisplaySize = ImVec2(cast(float)window.fbw, cast(float)window.fbh);
 
@@ -198,16 +168,15 @@ void update()
     gui.io.MouseWheel = mouseWheel;
     mouseWheel = 0.0f;
 
-    glfwSetInputMode(window.handle, GLFW_CURSOR, gui.io.MouseDrawCursor ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
+    window.cursorMode(gui.io.MouseDrawCursor? CursorMode.Hidden : CursorMode.Normal);
 
 	igNewFrame();
 }
 
 void render()
 {
-    glViewport(0, 0, cast(int)gui.io.DisplaySize.x, cast(int)gui.io.DisplaySize.y);
-    glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    graphics.viewPort(0, 0, cast(int)gui.io.DisplaySize.x, cast(int)gui.io.DisplaySize.y);
+    graphics.clearColor();
     igRender();
     window.swap();
 }

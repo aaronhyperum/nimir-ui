@@ -76,7 +76,7 @@ static this()
 
 static ~this()
 {
-    gui.quit();
+    gui.close();
 }
 
 final abstract class gui
@@ -97,109 +97,109 @@ final abstract class gui
         return igGetStyle();
     }
 
-    void initFontTexture()
+    void start()
     {
-    	ubyte* pixels;
-    	int width, height;
-    	ImFontAtlas_GetTexDataAsRGBA32(io.Fonts,&pixels,&width,&height,null);
+        if (!fontTexture)
+        {
+            const GLchar* vertShader =
+                "#version 330\n"
+                    "uniform mat4 ProjMtx;\n"
+                    "in vec2 Position;\n"
+                    "in vec2 UV;\n"
+                    "in vec4 Color;\n"
+                    "out vec2 Frag_UV;\n"
+                    "out vec4 Frag_Color;\n"
+                    "void main()\n"
+                    "{\n"
+                    "	Frag_UV = UV;\n"
+                    "	Frag_Color = Color;\n"
+                    "	gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
+                    "}\n";
 
-    	glGenTextures(1, &fontTexture);
-    	glBindTexture(GL_TEXTURE_2D, fontTexture);
-    	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+            const GLchar* fragShader =
+                "#version 330\n"
+                    "uniform sampler2D Texture;\n"
+                    "in vec2 Frag_UV;\n"
+                    "in vec4 Frag_Color;\n"
+                    "out vec4 Out_Color;\n"
+                    "void main()\n"
+                    "{\n"
+                    "	Out_Color = Frag_Color * texture( Texture, Frag_UV.st);\n"
+                    "}\n";
 
-    	ImFontAtlas_SetTexID(io.Fonts, cast(void*)fontTexture);
+        	shaderHandle = glCreateProgram();
+        	vertHandle = glCreateShader(GL_VERTEX_SHADER);
+        	fragHandle = glCreateShader(GL_FRAGMENT_SHADER);
+        	glShaderSource(vertHandle, 1, &vertShader, null);
+        	glShaderSource(fragHandle, 1, &fragShader, null);
+        	glCompileShader(vertHandle);
+        	glCompileShader(fragHandle);
+        	glAttachShader(shaderHandle, vertHandle);
+        	glAttachShader(shaderHandle, fragHandle);
+        	glLinkProgram(shaderHandle);
+
+        	attribLocationTex = glGetUniformLocation(shaderHandle, "Texture");
+        	attribLocationProjMtx = glGetUniformLocation(shaderHandle, "ProjMtx");
+        	attribLocationPosition = glGetAttribLocation(shaderHandle, "Position");
+        	attribLocationUV = glGetAttribLocation(shaderHandle, "UV");
+        	attribLocationColor = glGetAttribLocation(shaderHandle, "Color");
+
+            glGenBuffers(1, &vboHandle);
+            glGenBuffers(1, &elementsHandle);
+
+            glGenVertexArrays(1, &vaoHandle);
+            glBindVertexArray(vaoHandle);
+            glBindBuffer(GL_ARRAY_BUFFER, vboHandle);
+            glEnableVertexAttribArray(attribLocationPosition);
+            glEnableVertexAttribArray(attribLocationUV);
+            glEnableVertexAttribArray(attribLocationColor);
+
+        	glVertexAttribPointer(attribLocationPosition, 2, GL_FLOAT, GL_FALSE, ImDrawVert.sizeof, cast(void*)0);
+            glVertexAttribPointer(attribLocationUV, 2, GL_FLOAT, GL_FALSE, ImDrawVert.sizeof, cast(void*)ImDrawVert.uv.offsetof);
+            glVertexAttribPointer(attribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, ImDrawVert.sizeof, cast(void*)ImDrawVert.col.offsetof);
+
+        	glBindVertexArray(0);
+        	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+            ubyte* pixels;
+            int width, height;
+            ImFontAtlas_GetTexDataAsRGBA32(io.Fonts,&pixels,&width,&height,null);
+
+            glGenTextures(1, &fontTexture);
+            glBindTexture(GL_TEXTURE_2D, fontTexture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+            ImFontAtlas_SetTexID(io.Fonts, cast(void*)fontTexture);
+        }
     }
 
-    void init()
+    void close()
     {
-        const GLchar* vertShader =
-            "#version 330\n"
-                "uniform mat4 ProjMtx;\n"
-                "in vec2 Position;\n"
-                "in vec2 UV;\n"
-                "in vec4 Color;\n"
-                "out vec2 Frag_UV;\n"
-                "out vec4 Frag_Color;\n"
-                "void main()\n"
-                "{\n"
-                "	Frag_UV = UV;\n"
-                "	Frag_Color = Color;\n"
-                "	gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-                "}\n";
+        if (vaoHandle) glDeleteVertexArrays(1, &vaoHandle);
+        if (vboHandle) glDeleteBuffers(1, &vboHandle);
+        if (elementsHandle) glDeleteBuffers(1, &elementsHandle);
+        vaoHandle = 0;
+        vboHandle = 0;
+        elementsHandle = 0;
 
-        const GLchar* fragShader =
-            "#version 330\n"
-                "uniform sampler2D Texture;\n"
-                "in vec2 Frag_UV;\n"
-                "in vec4 Frag_Color;\n"
-                "out vec4 Out_Color;\n"
-                "void main()\n"
-                "{\n"
-                "	Out_Color = Frag_Color * texture( Texture, Frag_UV.st);\n"
-                "}\n";
+        glDetachShader(shaderHandle, vertHandle);
+        glDeleteShader(vertHandle);
+        vertHandle = 0;
 
-    	shaderHandle = glCreateProgram();
-    	vertHandle = glCreateShader(GL_VERTEX_SHADER);
-    	fragHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    	glShaderSource(vertHandle, 1, &vertShader, null);
-    	glShaderSource(fragHandle, 1, &fragShader, null);
-    	glCompileShader(vertHandle);
-    	glCompileShader(fragHandle);
-    	glAttachShader(shaderHandle, vertHandle);
-    	glAttachShader(shaderHandle, fragHandle);
-    	glLinkProgram(shaderHandle);
+        glDetachShader(shaderHandle, fragHandle);
+        glDeleteShader(fragHandle);
+        fragHandle = 0;
 
-    	attribLocationTex = glGetUniformLocation(shaderHandle, "Texture");
-    	attribLocationProjMtx = glGetUniformLocation(shaderHandle, "ProjMtx");
-    	attribLocationPosition = glGetAttribLocation(shaderHandle, "Position");
-    	attribLocationUV = glGetAttribLocation(shaderHandle, "UV");
-    	attribLocationColor = glGetAttribLocation(shaderHandle, "Color");
+        glDeleteProgram(shaderHandle);
+        shaderHandle = 0;
 
-        glGenBuffers(1, &vboHandle);
-        glGenBuffers(1, &elementsHandle);
-
-        glGenVertexArrays(1, &vaoHandle);
-        glBindVertexArray(vaoHandle);
-        glBindBuffer(GL_ARRAY_BUFFER, vboHandle);
-        glEnableVertexAttribArray(attribLocationPosition);
-        glEnableVertexAttribArray(attribLocationUV);
-        glEnableVertexAttribArray(attribLocationColor);
-
-    	glVertexAttribPointer(attribLocationPosition, 2, GL_FLOAT, GL_FALSE, ImDrawVert.sizeof, cast(void*)0);
-        glVertexAttribPointer(attribLocationUV, 2, GL_FLOAT, GL_FALSE, ImDrawVert.sizeof, cast(void*)ImDrawVert.uv.offsetof);
-        glVertexAttribPointer(attribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, ImDrawVert.sizeof, cast(void*)ImDrawVert.col.offsetof);
-
-    	glBindVertexArray(0);
-    	glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-
-    void quit()
-    {
-        if (gui.vaoHandle) glDeleteVertexArrays(1, &gui.vaoHandle);
-        if (gui.vboHandle) glDeleteBuffers(1, &gui.vboHandle);
-        if (gui.elementsHandle) glDeleteBuffers(1, &gui.elementsHandle);
-        gui.vaoHandle = 0;
-        gui.vboHandle = 0;
-        gui.elementsHandle = 0;
-
-        glDetachShader(gui.shaderHandle, gui.vertHandle);
-        glDeleteShader(gui.vertHandle);
-        gui.vertHandle = 0;
-
-        glDetachShader(gui.shaderHandle, gui.fragHandle);
-        glDeleteShader(gui.fragHandle);
-        gui.fragHandle = 0;
-
-        glDeleteProgram(gui.shaderHandle);
-        gui.shaderHandle = 0;
-
-    	if (gui.fontTexture)
+    	if (fontTexture)
     	{
-    		glDeleteTextures(1, &gui.fontTexture);
+    		glDeleteTextures(1, &fontTexture);
             ImFontAtlas_SetTexID(igGetIO().Fonts, cast(void*)0);
-    		gui.fontTexture = 0;
+    		fontTexture = 0;
     	}
 
         igShutdown();

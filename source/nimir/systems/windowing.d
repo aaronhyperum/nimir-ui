@@ -1,6 +1,6 @@
-module nimir.systems.window;
+module nimir.systems.windowing;
+import nimir.systems.graphics;
 
-import derelict.opengl3.gl3;
 import derelict.glfw3.glfw3;
 
 import std.string;
@@ -8,28 +8,53 @@ import std.stdio;
 
 import std.conv;
 
+enum CursorMode
+{
+    Normal,
+    Hidden,
+    Disabled
+};
+
 static this()
 {
-    DerelictGL3.load();
     DerelictGLFW3.load();
 
-    extern(C) nothrow void function(int error, const(char)* description) onError =
-    function void(int error, const(char)* description) nothrow
-    {
-        try { writefln("GLFW Error %s: %s",error, to!string(description)); }
-        catch { }
-    };
-    glfwSetErrorCallback(onError);
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+    windowing.start();
 }
 
 static ~this()
 {
-    glfwTerminate();
+    windowing.close();
+}
+
+final abstract class windowing
+{   static:
+    void start()
+    {
+        glfwSetErrorCallback
+        (
+            (error,description)
+            {
+                try { writefln("GLFW Error %s: %s",error, to!string(description)); }
+                catch { }
+            }
+        );
+        glfwInit();
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+    }
+
+    void close()
+    {
+        glfwTerminate();
+    }
+
+    void pollInput()
+    {
+        glfwPollEvents();
+    }
 }
 
 class Window
@@ -41,7 +66,7 @@ class Window
         glfwMakeContextCurrent(handle);
         glfwInit();
 
-        DerelictGL3.reload();
+        graphics.reloadContext();
     }
 
     ~this()
@@ -135,6 +160,11 @@ class Window
         double x, y;
         glfwGetCursorPos(handle, &x, &y);
         return y;
+    }
+
+    @property void cursorMode(CursorMode mode)
+    {
+        glfwSetInputMode(handle, GLFW_CURSOR, mode == CursorMode.Normal? GLFW_CURSOR_NORMAL : mode == CursorMode.Hidden? GLFW_CURSOR_HIDDEN :  GLFW_CURSOR_DISABLED);
     }
 
     @property extern(C) void onMouse(void function(GLFWwindow*, int, int, int) nothrow callback)
