@@ -15,6 +15,8 @@ import nimir.systems.graphics;
 import system = nimir.systems;
 import serial.device;
 
+import nimir.systems.audiovideo;
+
 //NOTE: Video initialization is commented out because of faulty SWS handling; waiting for software update.
 //TODO: Move this to nimir.system, report issue on Github.
 
@@ -22,12 +24,15 @@ import nimir.systems.audiovideo;
 
 NimirImage nimirLogo;
 NimirImage video;
+VideoStream videostream;
+VideoStream usb1, usb2, usb3;
+
+
 string[] ports;
 
 void main()
 {
 	system.init(1280, 720, "Nimir UI");
-	av.init();
 
 	bool mainWindow = false;
 	bool show_another_window = false;
@@ -35,26 +40,34 @@ void main()
 	ImFont* fontOSB = ImFontAtlas_AddFontFromFileTTF(igGetIO().Fonts, toStringz(format("%s%s", thisExePath().dirName(), "/res/ubuntu/ubuntu.mono-bold.ttf")), 14.0f, null);
 	nimirLogo = new NimirImage(); nimirLogo.loadFile(format("%s%s", thisExePath().dirName(), "/res/nimirui-logo-128x40.png"));
 	video = new NimirImage(); video.loadFile(format("%s%s", thisExePath().dirName(), "/res/nimirui-logo-128x40.png"));
+	//videostream = new VideoStream();
+	usb1 = new VideoStream();
+	//usb2 = new VideoStream();
+	//usb3 = new VideoStream();
+
+	//videostream.init("Face", 25, [640, 480]);
+
+	if (!usb1.init("USB", 25, [640, 480])) return;
+	//usb2.init("USB 2.0 PC Cam #2", 30, [640, 480]);
+	//usb3.init("USB 2.0 PC Cam #3", 30, [640, 480]);
 
 	while (system.window.shouldRun)
 	{
 		auto io = igGetIO();
 		system.update();
-
-		av.readFrame(video);
+		//videostream.update();
+		usb1.update();
+		//usb2.update();
+		//usb3.update();
 
 		{
 			igSetNextWindowPos(ImVec2(400,400), ImGuiSetCond_FirstUseEver);
-			igBegin("test", &mainWindow, ImGuiWindowFlags_AlwaysAutoResize);
+			igBegin("Camera Feed", &mainWindow, ImGuiWindowFlags_AlwaysAutoResize);
 
-			static float f = 0.0f;
-			igText("Hello, world!");
-			igSliderFloat("float", &f, 0.0f, 1.0f);
-			igColorEdit3("clear color", graphics.clearingColor);
-			if (igButton("Test Window")) show_test_window ^= 1;
-			if (igButton("Another Window")) show_another_window ^= 1;
 			igText("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-			igImage( cast(void*)video.glTexture, ImVec2(video.w*1.5, video.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
+			igImage( cast(void*)usb1.frame.glTexture, ImVec2(usb1.frame.w*1.5, usb1.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
+			//igImage( cast(void*)usb2.frame.glTexture, ImVec2(usb2.frame.w*1.5, usb2.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
+			//igImage( cast(void*)usb3.frame.glTexture, ImVec2(usb3.frame.w*1.5, usb3.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
 			igEnd();
 		}
 
@@ -223,7 +236,7 @@ void showPanel()
 				{
 					inputValue[i] = inputUsingAxis[i]? rawAxes[inputAxis[i]] : rawButtons[inputButton[i]];
 				}
-				
+
 			}
 		}
 		igText("");
