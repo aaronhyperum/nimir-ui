@@ -42,13 +42,13 @@ void main()
 	video = new NimirImage(); video.loadFile(format("%s%s", thisExePath().dirName(), "/res/nimirui-logo-128x40.png"));
 	//videostream = new VideoStream();
 	usb1 = new VideoStream();
-	//usb2 = new VideoStream();
+	usb2 = new VideoStream();
 	//usb3 = new VideoStream();
 
 	//videostream.init("Face", 25, [640, 480]);
 
 	if (!usb1.init("USB", 25, [640, 480])) return;
-	//usb2.init("USB 2.0 PC Cam #2", 30, [640, 480]);
+	if (!usb2.init("USB 2.0 PC Cam #2", 25, [640, 480])) return;
 	//usb3.init("USB 2.0 PC Cam #3", 30, [640, 480]);
 
 	while (system.window.shouldRun)
@@ -57,7 +57,7 @@ void main()
 		system.update();
 		//videostream.update();
 		usb1.update();
-		//usb2.update();
+		usb2.update();
 		//usb3.update();
 
 		{
@@ -66,7 +66,7 @@ void main()
 
 			igText("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 			igImage( cast(void*)usb1.frame.glTexture, ImVec2(usb1.frame.w*1.5, usb1.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
-			//igImage( cast(void*)usb2.frame.glTexture, ImVec2(usb2.frame.w*1.5, usb2.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
+			igImage( cast(void*)usb2.frame.glTexture, ImVec2(usb2.frame.w*1.5, usb2.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
 			//igImage( cast(void*)usb3.frame.glTexture, ImVec2(usb3.frame.w*1.5, usb3.frame.h*1.5), ImVec2(0,0), ImVec2(1,1),  ImVec4(255,255,255,255), ImVec4(255,255,255,0));
 			igEnd();
 		}
